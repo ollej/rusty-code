@@ -1,9 +1,13 @@
 [package]
 name = "rusty-code"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
 detect-lang = "0.1.5"
+jsonpath-rust = "0.1.5"
 macroquad = "0.3.20"
-rusty-slider = { path = "../rusty-slider" }
+quad-net = "0.1.1"
+quad-url = "0.1.1"
+rusty-slider = { git = "https://github.com/ollej/rusty-slider" }
+structopt = "0.3.26"

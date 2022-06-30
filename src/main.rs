@@ -1,9 +1,10 @@
+use jsonpath_rust::JsonPathFinder;
 use macroquad::prelude::*;
+use quad_net::http_request::{HttpError, RequestBuilder};
+use quad_url::get_program_parameters;
 use rusty_slider::prelude::*;
-use std::env;
 use std::path::PathBuf;
-#[cfg(not(debug_assertions))]
-use std::process;
+use structopt::StructOpt;
 
 fn window_conf() -> Conf {
     Conf {
@@ -13,35 +14,53 @@ fn window_conf() -> Conf {
     }
 }
 
-fn get_filename() -> String {
-    env::args().nth(1).unwrap_or_else(|| default_filename())
+async fn load_gist(gist_id: String) -> Result<String, HttpError> {
+    let path = format!("https://api.github.com/gists/{}", gist_id);
+    let mut request = RequestBuilder::new(path.as_str())
+        .header("Accept", "application/vnd.github.v3+json")
+        .send();
+    loop {
+        if let Some(result) = request.try_recv() {
+            return result;
+        };
+        next_frame().await;
+    }
 }
 
-#[cfg(debug_assertions)]
-fn default_filename() -> String {
-    "assets/helloworld.rs".to_string()
+fn parse_gist_response(json: String) -> (String, String) {
+    let finder = JsonPathFinder::from_str(&json, "$.files.*['filename', 'content']")
+        .expect("Couldn't parse Gist JSON!");
+    let gist = finder.find_slice();
+    let gist_filename = gist.first().unwrap().as_str().unwrap().to_string();
+    let gist_content = gist.get(1).unwrap().as_str().unwrap().to_string();
+    debug!(
+        "gist filename:\n{},\ngist_content:\n{}",
+        gist_filename, gist_content
+    );
+    (gist_filename, gist_content)
 }
 
-#[cfg(not(debug_assertions))]
-fn default_filename() -> String {
-    explain_usage()
+async fn get_gist_file(gist_id: String) -> (String, String) {
+    let json = load_gist(gist_id).await.expect("Couldn't load gist!");
+    parse_gist_response(json)
 }
 
-#[cfg(not(debug_assertions))]
-fn explain_usage() -> ! {
-    println!("Display a GIF file.\n\nUsage: quad-gif <file>");
-    process::exit(1)
+async fn load_sourcecode(gist: Option<String>, filename: PathBuf) -> (String, String) {
+    match gist {
+        Some(gist_id) => get_gist_file(gist_id).await,
+        None => {
+            let filename = filename.to_string_lossy().into_owned();
+            (
+                filename.clone(),
+                load_string(&filename)
+                    .await
+                    .expect("Couldn't find sourcecode file!"),
+            )
+        }
+    }
 }
 
-/// Binary to display source code with Macroquad
-#[macroquad::main(window_conf)]
-async fn main() {
-    let filename = get_filename();
-    let language = detect_lang::from_path(filename.clone()).map(|lang| lang.id().to_string());
-    let source_code = load_string(filename.as_str())
-        .await
-        .expect("Couldn't find sourcecode file!");
-    let theme = Theme::load(PathBuf::from("assets/theme.json".to_string())).await;
+async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
     let font_bold = load_ttf_font(&theme.font_bold)
         .await
         .expect("Couldn't load font");
@@ -51,8 +70,44 @@ async fn main() {
     let font_code = load_ttf_font(&theme.font_code)
         .await
         .expect("Couldn't load font");
+
+    let (filename, source_code) = load_sourcecode(opt.gist.clone(), opt.filename.clone()).await;
+    let language = detect_lang::from_path(filename.clone()).map(|lang| lang.id().to_string());
+
     let code_box_builder = CodeBoxBuilder::new(theme.clone(), font_code, font_bold, font_italic);
-    let codebox = code_box_builder.build_draw_box(language, source_code);
+
+    code_box_builder.build_draw_box(language, source_code)
+}
+
+#[derive(StructOpt, Debug)]
+#[structopt(
+    name = "rusty-code",
+    about = "A small tool to display sourcecode files"
+)]
+struct CliOptions {
+    /// Path to sourcecode file to display
+    #[structopt(
+        short,
+        long,
+        parse(from_os_str),
+        default_value = "assets/helloworld.rs"
+    )]
+    pub filename: PathBuf,
+    /// Gist id to display, if set, will override `filename` option
+    #[structopt(short, long)]
+    pub gist: Option<String>,
+    /// Path to theme.json file
+    #[structopt(short, long, parse(from_os_str), default_value = "assets/theme.json")]
+    pub theme: PathBuf,
+}
+
+/// Binary to display source code with Macroquad
+#[macroquad::main(window_conf)]
+async fn main() {
+    let opt = CliOptions::from_iter(get_program_parameters().iter());
+    let theme = Theme::load(opt.theme.clone()).await;
+
+    let codebox = build_codebox(&opt, &theme).await;
 
     loop {
         #[cfg(not(target_arch = "wasm32"))]
