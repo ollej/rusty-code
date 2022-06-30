@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+detect-lang = "0.1.5"
 macroquad = "0.3.20"
 rusty-slider = { path = "../rusty-slider" }

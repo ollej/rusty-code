@@ -255,6 +255,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "detect-lang"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0507346abae214ef8128c9417d9f8ae0aa6aad5bbdf56b9a25440befbbf9c0ac"
+
+[[package]]
 name = "either"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1051,6 +1057,7 @@ dependencies = [
 name = "rusty-code"
 version = "0.1.0"
 dependencies = [
+ "detect-lang",
  "macroquad",
  "rusty-slider",
 ]

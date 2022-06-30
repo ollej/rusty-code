@@ -19,7 +19,7 @@ fn get_filename() -> String {
 
 #[cfg(debug_assertions)]
 fn default_filename() -> String {
-    "assets/sourcecode.rs".to_string()
+    "assets/helloworld.rs".to_string()
 }
 
 #[cfg(not(debug_assertions))]
@@ -36,8 +36,9 @@ fn explain_usage() -> ! {
 /// Binary to display source code with Macroquad
 #[macroquad::main(window_conf)]
 async fn main() {
-    let language = Some("rust".to_string());
-    let source_code = load_string(get_filename().as_str())
+    let filename = get_filename();
+    let language = detect_lang::from_path(filename.clone()).map(|lang| lang.id().to_string());
+    let source_code = load_string(filename.as_str())
         .await
         .expect("Couldn't find sourcecode file!");
     let theme = Theme::load(PathBuf::from("assets/theme.json".to_string())).await;
