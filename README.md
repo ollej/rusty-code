@@ -2,16 +2,28 @@
 
 Display source code on screen using Macroquad.
 
+![Screenshot](https://ollej.github.io/rusty-code/assets/rusty-code.png)
+
 ## Usage
 
 Run from command line to display sourcecode syntax highlighted on screen using
 the Macroquad game library.
 
 ```
-rusty-code 0.1.0
-Display sourcecode
+rusty-code 0.2.0
+A small tool to display sourcecode files
 
-Usage: rusty-code <file>
+USAGE:
+    rusty-code [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -f, --filename <filename>    Path to sourcecode file to display [default: assets/helloworld.rs]
+    -g, --gist <gist>            Gist id to display, if set, will override `filename` option
+    -t, --theme <theme>          Path to theme.json file [default: assets/theme.json]
 ```
 
 ## License
