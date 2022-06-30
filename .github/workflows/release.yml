@@ -14,24 +14,24 @@ jobs:
       matrix:
         config:
           - os: ubuntu-latest
-            artifact_name: quad-gif
-            zip_file: quad-gif-linux.tar.gz
-            asset_name: quad-gif-linux-$tag.tar.gz
+            artifact_name: rusty-code
+            zip_file: rusty-code-linux.tar.gz
+            asset_name: rusty-code-linux-$tag.tar.gz
             target: 'x86_64-unknown-linux-gnu'
           - os: windows-latest
-            artifact_name: quad-gif.exe
-            zip_file: quad-gif-windows.zip
-            asset_name: quad-gif-windows-$tag.zip
+            artifact_name: rusty-code.exe
+            zip_file: rusty-code-windows.zip
+            asset_name: rusty-code-windows-$tag.zip
             target: 'x86_64-pc-windows-msvc'
           - os: macos-latest
-            artifact_name: quad-gif
-            zip_file: quad-gif-macos.zip
-            asset_name: quad-gif-macos-$tag.zip
+            artifact_name: rusty-code
+            zip_file: rusty-code-macos.zip
+            asset_name: rusty-code-macos-$tag.zip
             target: 'x86_64-apple-darwin'
           - os: ubuntu-latest
-            artifact_name: quad-gif.wasm
-            zip_file: quad-gif-wasm.zip
-            asset_name: quad-gif-wasm-$tag.zip
+            artifact_name: rusty-code.wasm
+            zip_file: rusty-code-wasm.zip
+            asset_name: rusty-code-wasm-$tag.zip
             target: 'wasm32-unknown-unknown'
         include:
           - os: ubuntu-latest
