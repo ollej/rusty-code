@@ -1,0 +1,8 @@
+[package]
+name = "rusty-code"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+macroquad = "0.3.20"
+rusty-slider = { path = "../rusty-slider" }
