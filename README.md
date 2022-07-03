@@ -28,7 +28,7 @@ Enter a Gist id:
 <form action="https://ollej.github.io/rusty-code/demo/index.html" method="get">
 <input type="text" name="gist">
 <input type="submit" value="Display gist">
-</form>
+</form><br>
 
 ### Show sourcecode
 
@@ -45,10 +45,10 @@ Enter sourcecode:
 <option value="python">Python</option>
 <option value="ruby">Ruby</option>
 <option value="rust" selected>Rust</option>
-</select>
-<textarea name="code" rows="5"></textarea>
+</select><br>
+<textarea name="code" rows="5" cols="60"></textarea><br>
 <input type="submit" value="Display code">
-</form>
+</form><br>
 
 ## Usage
 
