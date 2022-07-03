@@ -10,6 +10,46 @@ The application also runs in the browser:
 
 [Web demo](https://ollej.github.io/rusty-code/demo/index.html)
 
+### Examples
+
+Display a Gist by adding the Gist id as the `gist` query parameter:
+
+[https://ollej.github.io/rusty-code/demo/index.html?gist=7834a1320cbc1bcfb50304f51c19e618](https://ollej.github.io/rusty-code/demo/index.html?gist=7834a1320cbc1bcfb50304f51c19e618)
+
+Show URL encoded sourcecode with the `code` parameter, also use `language`
+parameter to set language for syntax highlighting:
+
+[https://ollej.github.io/rusty-code/demo/index.html?language=rust&code=fn%20main%28%29%20%7B%0A%20%20%20%20println%21%28%22Hello%20World%21%22%29%3B%0A%7D](https://ollej.github.io/rusty-code/demo/index.html?language=rust&code=fn%20main%28%29%20%7B%0A%20%20%20%20println%21%28%22Hello%20World%21%22%29%3B%0A%7D)
+
+### Open a Gist
+
+Enter a Gist id:
+
+<form action="https://ollej.github.io/rusty-code/demo/index.html" method="get">
+<input type="text" name="gist">
+<input type="submit" value="Display gist">
+</form>
+
+### Show sourcecode
+
+Enter sourcecode:
+
+<form action="https://ollej.github.io/rusty-code/demo/index.html" method="get">
+<select name="language">
+<option value="rust">Rust</option>
+<option value="c">C</option>
+<option value="cpp">C++</option>
+<option value="python">Python</option>
+<option value="ruby">Ruby</option>
+<option value="js">Javascript</option>
+<option value="go">Go</option>
+<option value="java">Java</option>
+<option value="perl">Perl</option>
+</select>
+<textarea name="code" rows="5"></textarea>
+<input type="submit" value="Display code">
+</form>
+
 ## Usage
 
 Run from command line to display sourcecode syntax highlighted on screen using
