@@ -4,6 +4,12 @@ Display source code on screen using Macroquad.
 
 ![Screenshot](https://ollej.github.io/rusty-code/assets/rusty-code.png)
 
+## Demo
+
+The application also runs in the browser:
+
+[Web demo](https://ollej.github.io/rusty-code/demo/index.html)
+
 ## Usage
 
 Run from command line to display sourcecode syntax highlighted on screen using
