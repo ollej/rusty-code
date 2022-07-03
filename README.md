@@ -36,15 +36,15 @@ Enter sourcecode:
 
 <form action="https://ollej.github.io/rusty-code/demo/index.html" method="get">
 <select name="language">
-<option value="rust">Rust</option>
 <option value="c">C</option>
 <option value="cpp">C++</option>
-<option value="python">Python</option>
-<option value="ruby">Ruby</option>
-<option value="js">Javascript</option>
 <option value="go">Go</option>
 <option value="java">Java</option>
+<option value="js">Javascript</option>
 <option value="perl">Perl</option>
+<option value="python">Python</option>
+<option value="ruby">Ruby</option>
+<option value="rust" selected>Rust</option>
 </select>
 <textarea name="code" rows="5"></textarea>
 <input type="submit" value="Display code">
