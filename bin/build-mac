@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+# Build release for mac
+cargo build --release --target x86_64-apple-darwin
+
+# Package mac zip
+mkdir -p ./target/Rustycode.app/Contents/MacOS
+mkdir -p ./target/Rustycode.app/Contents/Resources
+echo "APPSFooB" > ./target/Rustycode.app/Contents/PkgInfo
+cp ./target/release/rusty-code ./target/RustyCode.app/Contents/MacOS
+cp -pR ./assets ./target/Rustycode.app/Contents/Resources/
+ln -sfh ../Resources/assets ./target/Rustycode.app/Contents/MacOS/assets
+cp Info.plist ./target/Rustycode.app/Contents/
+cd ./target
+zip -ruqy rusty-code-mac.zip RustyCode.app
