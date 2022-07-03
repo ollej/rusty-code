@@ -40,24 +40,31 @@ fn parse_gist_response(json: String) -> (String, String) {
     (gist_filename, gist_content)
 }
 
-async fn get_gist_file(gist_id: String) -> (String, String) {
-    let json = load_gist(gist_id).await.expect("Couldn't load gist!");
-    parse_gist_response(json)
+async fn get_gist_file(gist_id: String) -> Result<(String, String), String> {
+    match load_gist(gist_id).await {
+        Ok(json) => Ok(parse_gist_response(json)),
+        Err(_) => Err("Couldn't load gist!".to_string()),
+    }
 }
 
-async fn load_sourcecode(gist: Option<String>, filename: PathBuf) -> (String, String) {
-    match gist {
-        Some(gist_id) => get_gist_file(gist_id).await,
-        None => {
-            let filename = filename.to_string_lossy().into_owned();
-            (
-                filename.clone(),
-                load_string(&filename)
-                    .await
-                    .expect("Couldn't find sourcecode file!"),
-            )
-        }
+async fn load_sourcecode(
+    gist: Option<String>,
+    filename: Option<PathBuf>,
+    code: Option<String>,
+) -> Result<(String, String), String> {
+    if let Some(c) = code {
+        return Ok(("noname.ext".to_string(), c));
     }
+    if let Some(gist_id) = gist {
+        return get_gist_file(gist_id).await;
+    }
+    let file = filename
+        .map(|file| file.to_string_lossy().into_owned())
+        .unwrap_or("assets/helloworld.rs".to_string());
+    return match load_string(&file).await {
+        Ok(code) => Ok((file, code)),
+        Err(_) => Err(format!("Couldn't load sourcecode from file '{}'", file)),
+    };
 }
 
 async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
@@ -71,7 +78,10 @@ async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
         .await
         .expect("Couldn't load font");
 
-    let (filename, source_code) = load_sourcecode(opt.gist.clone(), opt.filename.clone()).await;
+    let (filename, source_code) =
+        load_sourcecode(opt.gist.clone(), opt.filename.clone(), opt.code.clone())
+            .await
+            .expect("Couldn't load sourcecode!");
     let language = detect_lang::from_path(filename.clone()).map(|lang| lang.id().to_string());
 
     let code_box_builder = CodeBoxBuilder::new(theme.clone(), font_code, font_bold, font_italic);
@@ -85,17 +95,15 @@ async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
     about = "A small tool to display sourcecode files"
 )]
 struct CliOptions {
-    /// Path to sourcecode file to display
-    #[structopt(
-        short,
-        long,
-        parse(from_os_str),
-        default_value = "assets/helloworld.rs"
-    )]
-    pub filename: PathBuf,
+    /// Path to sourcecode file to display [default: assets/helloworld.rs]
+    #[structopt(short, long, parse(from_os_str))]
+    pub filename: Option<PathBuf>,
     /// Gist id to display, if set, will override `filename` option
     #[structopt(short, long)]
     pub gist: Option<String>,
+    /// Code to display, overrides both `filename` and `gist`
+    #[structopt(short, long)]
+    pub code: Option<String>,
     /// Path to theme.json file
     #[structopt(short, long, parse(from_os_str), default_value = "assets/theme.json")]
     pub theme: PathBuf,

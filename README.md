@@ -16,7 +16,7 @@ Run from command line to display sourcecode syntax highlighted on screen using
 the Macroquad game library.
 
 ```
-rusty-code 0.2.0
+rusty-code 0.3.0
 A small tool to display sourcecode files
 
 USAGE:
@@ -27,6 +27,7 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
+    -c, --code <code>            Code to display, overrides both `filename` and `gist`
     -f, --filename <filename>    Path to sourcecode file to display [default: assets/helloworld.rs]
     -g, --gist <gist>            Gist id to display, if set, will override `filename` option
     -t, --theme <theme>          Path to theme.json file [default: assets/theme.json]
