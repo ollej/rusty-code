@@ -30,6 +30,7 @@ OPTIONS:
     -c, --code <code>            Code to display, overrides both `filename` and `gist`
     -f, --filename <filename>    Path to sourcecode file to display [default: assets/helloworld.rs]
     -g, --gist <gist>            Gist id to display, if set, will override `filename` option
+    -l, --language <language>    Language of the code, if empty defaults to file extension
     -t, --theme <theme>          Path to theme.json file [default: assets/theme.json]
 ```
 

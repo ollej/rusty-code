@@ -67,6 +67,10 @@ async fn load_sourcecode(
     };
 }
 
+fn language_from_extension(filename: String) -> Option<String> {
+    detect_lang::from_path(filename).map(|lang| lang.id().to_string())
+}
+
 async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
     let font_bold = load_ttf_font(&theme.font_bold)
         .await
@@ -82,7 +86,10 @@ async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
         load_sourcecode(opt.gist.clone(), opt.filename.clone(), opt.code.clone())
             .await
             .expect("Couldn't load sourcecode!");
-    let language = detect_lang::from_path(filename.clone()).map(|lang| lang.id().to_string());
+    let language = opt
+        .language
+        .clone()
+        .or_else(|| language_from_extension(filename));
 
     let code_box_builder = CodeBoxBuilder::new(theme.clone(), font_code, font_bold, font_italic);
 
@@ -95,15 +102,18 @@ async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
     about = "A small tool to display sourcecode files"
 )]
 struct CliOptions {
+    /// Code to display, overrides both `filename` and `gist`
+    #[structopt(short, long)]
+    pub code: Option<String>,
     /// Path to sourcecode file to display [default: assets/helloworld.rs]
     #[structopt(short, long, parse(from_os_str))]
     pub filename: Option<PathBuf>,
     /// Gist id to display, if set, will override `filename` option
     #[structopt(short, long)]
     pub gist: Option<String>,
-    /// Code to display, overrides both `filename` and `gist`
+    /// Language of the code, if empty defaults to file extension.
     #[structopt(short, long)]
-    pub code: Option<String>,
+    pub language: Option<String>,
     /// Path to theme.json file
     #[structopt(short, long, parse(from_os_str), default_value = "assets/theme.json")]
     pub theme: PathBuf,
