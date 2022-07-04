@@ -26,8 +26,9 @@ impl Code {
         }
     }
 
-    fn language(&self) -> Option<String> {
-        detect_lang::from_path(&self.filename).map(|lang| lang.id().to_string())
+    fn language(&self, language_override: Option<String>) -> Option<String> {
+        language_override
+            .or_else(|| detect_lang::from_path(&self.filename).map(|lang| lang.id().to_string()))
     }
 
     async fn load_sourcecode(
@@ -110,7 +111,7 @@ async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
     let code = Code::load_sourcecode(opt.gist.clone(), opt.filename.clone(), opt.code.clone())
         .await
         .expect("Couldn't load sourcecode!");
-    let language = opt.language.clone().or_else(|| code.language());
+    let language = code.language(opt.language.clone());
 
     let code_box_builder = CodeBoxBuilder::new(theme.clone(), font_code, font_bold, font_italic);
 
