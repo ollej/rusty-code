@@ -6,6 +6,55 @@ use rusty_slider::prelude::*;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+struct Code {
+    filename: String,
+    sourcecode: String,
+}
+
+impl Code {
+    fn new(filename: String, sourcecode: String) -> Self {
+        Self {
+            filename,
+            sourcecode,
+        }
+    }
+
+    fn from_sourcecode(sourcecode: String) -> Self {
+        Self {
+            filename: "noname.txt".to_string(),
+            sourcecode,
+        }
+    }
+
+    fn language(&self) -> Option<String> {
+        detect_lang::from_path(&self.filename).map(|lang| lang.id().to_string())
+    }
+
+    async fn load_sourcecode(
+        gist: Option<String>,
+        filename: Option<PathBuf>,
+        code: Option<String>,
+    ) -> Result<Code, String> {
+        if let Some(content) = code {
+            return Ok(Code::from_sourcecode(content));
+        }
+        if let Some(gist_id) = gist {
+            return get_gist_file(gist_id).await;
+        }
+        let file = Self::get_filename(filename);
+        return match load_string(&file).await {
+            Ok(code) => Ok(Code::new(file, code)),
+            Err(_) => Err(format!("Couldn't load sourcecode from file '{}'", file)),
+        };
+    }
+
+    fn get_filename(filename: Option<PathBuf>) -> String {
+        filename
+            .map(|file| file.to_string_lossy().into_owned())
+            .unwrap_or("assets/helloworld.rs".to_string())
+    }
+}
+
 fn window_conf() -> Conf {
     Conf {
         window_title: "Rusty Code".to_owned(),
@@ -27,7 +76,7 @@ async fn load_gist(gist_id: String) -> Result<String, HttpError> {
     }
 }
 
-fn parse_gist_response(json: String) -> (String, String) {
+fn parse_gist_response(json: String) -> Code {
     let finder = JsonPathFinder::from_str(&json, "$.files.*['filename', 'content']")
         .expect("Couldn't parse Gist JSON!");
     let gist = finder.find_slice();
@@ -37,38 +86,14 @@ fn parse_gist_response(json: String) -> (String, String) {
         "gist filename:\n{},\ngist_content:\n{}",
         gist_filename, gist_content
     );
-    (gist_filename, gist_content)
+    Code::new(gist_filename, gist_content)
 }
 
-async fn get_gist_file(gist_id: String) -> Result<(String, String), String> {
+async fn get_gist_file(gist_id: String) -> Result<Code, String> {
     match load_gist(gist_id).await {
         Ok(json) => Ok(parse_gist_response(json)),
         Err(_) => Err("Couldn't load gist!".to_string()),
     }
-}
-
-async fn load_sourcecode(
-    gist: Option<String>,
-    filename: Option<PathBuf>,
-    code: Option<String>,
-) -> Result<(String, String), String> {
-    if let Some(c) = code {
-        return Ok(("noname.ext".to_string(), c));
-    }
-    if let Some(gist_id) = gist {
-        return get_gist_file(gist_id).await;
-    }
-    let file = filename
-        .map(|file| file.to_string_lossy().into_owned())
-        .unwrap_or("assets/helloworld.rs".to_string());
-    return match load_string(&file).await {
-        Ok(code) => Ok((file, code)),
-        Err(_) => Err(format!("Couldn't load sourcecode from file '{}'", file)),
-    };
-}
-
-fn language_from_extension(filename: String) -> Option<String> {
-    detect_lang::from_path(filename).map(|lang| lang.id().to_string())
 }
 
 async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
@@ -82,18 +107,14 @@ async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
         .await
         .expect("Couldn't load font");
 
-    let (filename, source_code) =
-        load_sourcecode(opt.gist.clone(), opt.filename.clone(), opt.code.clone())
-            .await
-            .expect("Couldn't load sourcecode!");
-    let language = opt
-        .language
-        .clone()
-        .or_else(|| language_from_extension(filename));
+    let code = Code::load_sourcecode(opt.gist.clone(), opt.filename.clone(), opt.code.clone())
+        .await
+        .expect("Couldn't load sourcecode!");
+    let language = opt.language.clone().or_else(|| code.language());
 
     let code_box_builder = CodeBoxBuilder::new(theme.clone(), font_code, font_bold, font_italic);
 
-    code_box_builder.build_draw_box(language, source_code)
+    code_box_builder.build_draw_box(language, code.sourcecode)
 }
 
 #[derive(StructOpt, Debug)]
