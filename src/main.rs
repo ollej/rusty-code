@@ -1,9 +1,10 @@
 use jsonpath_rust::JsonPathFinder;
 use macroquad::prelude::*;
-use quad_net::http_request::RequestBuilder;
+use quad_net::http_request::{HttpError, RequestBuilder};
 use quad_url::get_program_parameters;
 use rusty_slider::prelude::*;
-use std::error::Error;
+use std::error;
+use std::fmt;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -36,7 +37,7 @@ impl Code {
         gist: Option<String>,
         filename: Option<PathBuf>,
         code: Option<String>,
-    ) -> Result<Code, Box<dyn Error>> {
+    ) -> Result<Code> {
         if let Some(content) = code {
             return Ok(Code::from_sourcecode(content));
         }
@@ -57,6 +58,46 @@ impl Code {
     }
 }
 
+type Result<T> = std::result::Result<T, CodeError>;
+
+#[derive(Debug)]
+enum CodeError {
+    FileError(String, FileError),
+    GistError(String, HttpError),
+    FontError(String, FontError),
+    JsonPathError(String),
+}
+
+impl fmt::Display for CodeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &*self {
+            CodeError::FileError(filename, _e) => write!(f, "Couldn't load file: {}", filename),
+            CodeError::GistError(gist_id, _e) => {
+                write!(f, "Couldn't load Gist with ID: {}", gist_id)
+            }
+            CodeError::FontError(filename, _e) => write!(f, "Couldn't load font: {}", filename),
+            CodeError::JsonPathError(message) => write!(f, "Couldn't parse JSON: {}", message),
+        }
+    }
+}
+
+impl error::Error for CodeError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        match &*self {
+            CodeError::FileError(_, ref e) => Some(e),
+            CodeError::GistError(_, _e) => None,
+            CodeError::FontError(_, ref e) => Some(e),
+            CodeError::JsonPathError(_) => None,
+        }
+    }
+}
+
+impl From<FileError> for CodeError {
+    fn from(err: FileError) -> CodeError {
+        CodeError::FileError(err.path.clone(), err)
+    }
+}
+
 fn window_conf() -> Conf {
     Conf {
         window_title: "Rusty Code".to_owned(),
@@ -65,21 +106,22 @@ fn window_conf() -> Conf {
     }
 }
 
-async fn load_gist(gist_id: String) -> Result<String, Box<dyn Error>> {
+async fn load_gist(gist_id: String) -> Result<String> {
     let path = format!("https://api.github.com/gists/{}", gist_id);
     let mut request = RequestBuilder::new(path.as_str())
         .header("Accept", "application/vnd.github.v3+json")
         .send();
     loop {
         if let Some(result) = request.try_recv() {
-            return result.map_err(|e| e.to_string().into());
+            return result.map_err(|e| CodeError::GistError(gist_id, e));
         };
         next_frame().await;
     }
 }
 
-fn parse_gist_response(json: String) -> Result<Code, Box<dyn Error>> {
-    let finder = JsonPathFinder::from_str(&json, "$.files.*['filename', 'content']")?;
+fn parse_gist_response(json: String) -> Result<Code> {
+    let finder = JsonPathFinder::from_str(&json, "$.files.*['filename', 'content']")
+        .map_err(|e| CodeError::JsonPathError(e))?;
     let gist = finder.find_slice();
     let gist_filename = gist.first().unwrap().as_str().unwrap().to_string();
     let gist_content = gist.get(1).unwrap().as_str().unwrap().to_string();
@@ -90,15 +132,21 @@ fn parse_gist_response(json: String) -> Result<Code, Box<dyn Error>> {
     Ok(Code::new(gist_filename, gist_content))
 }
 
-async fn get_gist_file(gist_id: String) -> Result<Code, Box<dyn Error>> {
+async fn get_gist_file(gist_id: String) -> Result<Code> {
     let json = load_gist(gist_id).await?;
     parse_gist_response(json)
 }
 
-async fn build_codebox(opt: &CliOptions, theme: &Theme) -> Result<TextBox, Box<dyn Error>> {
-    let font_bold = load_ttf_font(&theme.font_bold).await?;
-    let font_italic = load_ttf_font(&theme.font_italic).await?;
-    let font_code = load_ttf_font(&theme.font_code).await?;
+async fn build_codebox(opt: &CliOptions, theme: &Theme) -> Result<TextBox> {
+    let font_bold = load_ttf_font(&theme.font_bold)
+        .await
+        .map_err(|e| CodeError::FontError(theme.font_bold.clone(), e))?;
+    let font_italic = load_ttf_font(&theme.font_italic)
+        .await
+        .map_err(|e| CodeError::FontError(theme.font_italic.clone(), e))?;
+    let font_code = load_ttf_font(&theme.font_code)
+        .await
+        .map_err(|e| CodeError::FontError(theme.font_code.clone(), e))?;
 
     let code = Code::load(opt.gist.clone(), opt.filename.clone(), opt.code.clone()).await?;
     let language = code.language(opt.language.clone());
@@ -111,7 +159,7 @@ async fn build_codebox(opt: &CliOptions, theme: &Theme) -> Result<TextBox, Box<d
 fn draw_error_message(message: String, font_size: u16) {
     let text_dim = measure_text(&message, None, font_size, 1.0);
     let xpos = screen_width() / 2. - text_dim.width / 2.;
-    let ypos = screen_height() / 2. - text_dim.height / 2. + text_dim.offset_y;
+    let ypos = screen_height() / 2. - text_dim.height / 2.;
     draw_text_ex(
         &message,
         xpos,
