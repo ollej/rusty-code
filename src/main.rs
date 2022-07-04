@@ -1,8 +1,9 @@
 use jsonpath_rust::JsonPathFinder;
 use macroquad::prelude::*;
-use quad_net::http_request::{HttpError, RequestBuilder};
+use quad_net::http_request::RequestBuilder;
 use quad_url::get_program_parameters;
 use rusty_slider::prelude::*;
+use std::error::Error;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -31,11 +32,11 @@ impl Code {
             .or_else(|| detect_lang::from_path(&self.filename).map(|lang| lang.id().to_string()))
     }
 
-    async fn load_sourcecode(
+    async fn load(
         gist: Option<String>,
         filename: Option<PathBuf>,
         code: Option<String>,
-    ) -> Result<Code, String> {
+    ) -> Result<Code, Box<dyn Error>> {
         if let Some(content) = code {
             return Ok(Code::from_sourcecode(content));
         }
@@ -43,10 +44,10 @@ impl Code {
             return get_gist_file(gist_id).await;
         }
         let file = Self::get_filename(filename);
-        return match load_string(&file).await {
-            Ok(code) => Ok(Code::new(file, code)),
-            Err(_) => Err(format!("Couldn't load sourcecode from file '{}'", file)),
-        };
+        return load_string(&file)
+            .await
+            .map(|code| Code::new(file, code))
+            .map_err(|e| e.into());
     }
 
     fn get_filename(filename: Option<PathBuf>) -> String {
@@ -64,22 +65,21 @@ fn window_conf() -> Conf {
     }
 }
 
-async fn load_gist(gist_id: String) -> Result<String, HttpError> {
+async fn load_gist(gist_id: String) -> Result<String, Box<dyn Error>> {
     let path = format!("https://api.github.com/gists/{}", gist_id);
     let mut request = RequestBuilder::new(path.as_str())
         .header("Accept", "application/vnd.github.v3+json")
         .send();
     loop {
         if let Some(result) = request.try_recv() {
-            return result;
+            return result.map_err(|e| e.to_string().into());
         };
         next_frame().await;
     }
 }
 
-fn parse_gist_response(json: String) -> Code {
-    let finder = JsonPathFinder::from_str(&json, "$.files.*['filename', 'content']")
-        .expect("Couldn't parse Gist JSON!");
+fn parse_gist_response(json: String) -> Result<Code, Box<dyn Error>> {
+    let finder = JsonPathFinder::from_str(&json, "$.files.*['filename', 'content']")?;
     let gist = finder.find_slice();
     let gist_filename = gist.first().unwrap().as_str().unwrap().to_string();
     let gist_content = gist.get(1).unwrap().as_str().unwrap().to_string();
@@ -87,37 +87,41 @@ fn parse_gist_response(json: String) -> Code {
         "gist filename:\n{},\ngist_content:\n{}",
         gist_filename, gist_content
     );
-    Code::new(gist_filename, gist_content)
+    Ok(Code::new(gist_filename, gist_content))
 }
 
-async fn get_gist_file(gist_id: String) -> Result<Code, String> {
-    match load_gist(gist_id).await {
-        Ok(json) => Ok(parse_gist_response(json)),
-        Err(_) => Err("Couldn't load gist!".to_string()),
-    }
+async fn get_gist_file(gist_id: String) -> Result<Code, Box<dyn Error>> {
+    let json = load_gist(gist_id).await?;
+    parse_gist_response(json)
 }
 
-async fn build_codebox(opt: &CliOptions, theme: &Theme) -> TextBox {
-    let font_bold = load_ttf_font(&theme.font_bold)
-        .await
-        .expect("Couldn't load font");
-    let font_italic = load_ttf_font(&theme.font_italic)
-        .await
-        .expect("Couldn't load font");
-    let font_code = load_ttf_font(&theme.font_code)
-        .await
-        .expect("Couldn't load font");
+async fn build_codebox(opt: &CliOptions, theme: &Theme) -> Result<TextBox, Box<dyn Error>> {
+    let font_bold = load_ttf_font(&theme.font_bold).await?;
+    let font_italic = load_ttf_font(&theme.font_italic).await?;
+    let font_code = load_ttf_font(&theme.font_code).await?;
 
-    let code = Code::load_sourcecode(opt.gist.clone(), opt.filename.clone(), opt.code.clone())
-        .await
-        .expect("Couldn't load sourcecode!");
+    let code = Code::load(opt.gist.clone(), opt.filename.clone(), opt.code.clone()).await?;
     let language = code.language(opt.language.clone());
 
     let code_box_builder = CodeBoxBuilder::new(theme.clone(), font_code, font_bold, font_italic);
 
-    code_box_builder.build_draw_box(language, code.sourcecode)
+    Ok(code_box_builder.build_draw_box(language, code.sourcecode))
 }
 
+fn draw_error_message(message: String, font_size: u16) {
+    let text_dim = measure_text(&message, None, font_size, 1.0);
+    let xpos = screen_width() / 2. - text_dim.width / 2.;
+    let ypos = screen_height() / 2. - text_dim.height / 2. + text_dim.offset_y;
+    draw_text_ex(
+        &message,
+        xpos,
+        ypos,
+        TextParams {
+            font_size: font_size,
+            ..TextParams::default()
+        },
+    );
+}
 #[derive(StructOpt, Debug)]
 #[structopt(
     name = "rusty-code",
@@ -147,7 +151,14 @@ async fn main() {
     let opt = CliOptions::from_iter(get_program_parameters().iter());
     let theme = Theme::load(opt.theme.clone()).await;
 
-    let codebox = build_codebox(&opt, &theme).await;
+    let codebox_result = build_codebox(&opt, &theme).await;
+    if let Err(e) = &codebox_result {
+        error!("Encountered an error: {}", e);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            std::process::exit(1);
+        }
+    }
 
     loop {
         #[cfg(not(target_arch = "wasm32"))]
@@ -156,9 +167,16 @@ async fn main() {
         }
 
         clear_background(theme.background_color);
-        let xpos = screen_width() / 2. - codebox.width_with_padding() as f32 / 2.;
-        let ypos = screen_height() / 2. - codebox.height_with_padding() as f32 / 2.;
-        codebox.draw(xpos, ypos);
+        match &codebox_result {
+            Ok(codebox) => {
+                let xpos = screen_width() / 2. - codebox.width_with_padding() as f32 / 2.;
+                let ypos = screen_height() / 2. - codebox.height_with_padding() as f32 / 2.;
+                codebox.draw(xpos, ypos);
+            }
+            Err(e) => {
+                draw_error_message(e.to_string(), theme.font_size_text as u16);
+            }
+        };
 
         next_frame().await
     }
