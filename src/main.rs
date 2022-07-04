@@ -63,20 +63,20 @@ type Result<T> = std::result::Result<T, CodeError>;
 #[derive(Debug)]
 enum CodeError {
     FileError(String, FileError),
-    GistError(String, HttpError),
+    GistLoadError(String, HttpError),
     FontError(String, FontError),
-    JsonPathError(String),
+    GistParseError(String),
 }
 
 impl fmt::Display for CodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &*self {
             CodeError::FileError(filename, _e) => write!(f, "Couldn't load file: {}", filename),
-            CodeError::GistError(gist_id, _e) => {
+            CodeError::GistLoadError(gist_id, _e) => {
                 write!(f, "Couldn't load Gist with ID: {}", gist_id)
             }
             CodeError::FontError(filename, _e) => write!(f, "Couldn't load font: {}", filename),
-            CodeError::JsonPathError(message) => write!(f, "Couldn't parse JSON: {}", message),
+            CodeError::GistParseError(message) => write!(f, "Couldn't parse JSON: {}", message),
         }
     }
 }
@@ -85,9 +85,9 @@ impl error::Error for CodeError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match &*self {
             CodeError::FileError(_, ref e) => Some(e),
-            CodeError::GistError(_, _e) => None,
+            CodeError::GistLoadError(_, _e) => None,
             CodeError::FontError(_, ref e) => Some(e),
-            CodeError::JsonPathError(_) => None,
+            CodeError::GistParseError(_) => None,
         }
     }
 }
@@ -98,14 +98,6 @@ impl From<FileError> for CodeError {
     }
 }
 
-fn window_conf() -> Conf {
-    Conf {
-        window_title: "Rusty Code".to_owned(),
-        fullscreen: true,
-        ..Default::default()
-    }
-}
-
 async fn load_gist(gist_id: String) -> Result<String> {
     let path = format!("https://api.github.com/gists/{}", gist_id);
     let mut request = RequestBuilder::new(path.as_str())
@@ -113,7 +105,7 @@ async fn load_gist(gist_id: String) -> Result<String> {
         .send();
     loop {
         if let Some(result) = request.try_recv() {
-            return result.map_err(|e| CodeError::GistError(gist_id, e));
+            return result.map_err(|e| CodeError::GistLoadError(gist_id, e));
         };
         next_frame().await;
     }
@@ -121,7 +113,7 @@ async fn load_gist(gist_id: String) -> Result<String> {
 
 fn parse_gist_response(json: String) -> Result<Code> {
     let finder = JsonPathFinder::from_str(&json, "$.files.*['filename', 'content']")
-        .map_err(|e| CodeError::JsonPathError(e))?;
+        .map_err(|e| CodeError::GistParseError(e))?;
     let gist = finder.find_slice();
     let gist_filename = gist.first().unwrap().as_str().unwrap().to_string();
     let gist_content = gist.get(1).unwrap().as_str().unwrap().to_string();
@@ -191,6 +183,14 @@ struct CliOptions {
     /// Path to theme.json file
     #[structopt(short, long, parse(from_os_str), default_value = "assets/theme.json")]
     pub theme: PathBuf,
+}
+
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Rusty Code".to_owned(),
+        fullscreen: true,
+        ..Default::default()
+    }
 }
 
 /// Binary to display source code with Macroquad
