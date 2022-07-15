@@ -208,13 +208,52 @@ async fn main() {
         }
     }
 
+    let render_target = render_target(500, 500);
+    render_target.texture.set_filter(FilterMode::Nearest);
+
+    let material = load_material(
+        GRADIENT_VERTEX_SHADER,
+        GRADIENT_FRAGMENT_SHADER,
+        MaterialParams {
+            uniforms: vec![("canvasSize".to_owned(), UniformType::Float2)],
+            ..Default::default()
+        },
+    )
+    .unwrap();
     loop {
         #[cfg(not(target_arch = "wasm32"))]
         if is_key_pressed(KeyCode::Q) | is_key_pressed(KeyCode::Escape) {
             break;
         }
 
-        clear_background(theme.background_color);
+        // 0..100, 0..100 camera
+        set_camera(&Camera2D {
+            zoom: vec2(0.01, 0.01),
+            target: vec2(0.0, 0.0),
+            render_target: Some(render_target),
+            ..Default::default()
+        });
+
+        // drawing to the screen
+
+        set_default_camera();
+
+        clear_background(WHITE);
+        gl_use_material(material);
+        material.set_uniform("canvasSize", (screen_width(), screen_height()));
+        draw_texture_ex(
+            render_target.texture,
+            0.,
+            0.,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(screen_width(), screen_height())),
+                ..Default::default()
+            },
+        );
+        gl_use_default_material();
+
+        //clear_background(theme.background_color);
         match &codebox_result {
             Ok(codebox) => {
                 let xpos = screen_width() / 2. - codebox.width_with_padding() as f32 / 2.;
@@ -229,3 +268,25 @@ async fn main() {
         next_frame().await
     }
 }
+
+const GRADIENT_FRAGMENT_SHADER: &'static str = r#"#version 100
+precision lowp float;
+uniform vec2 canvasSize;
+uniform sampler2D Texture;
+
+void main() {
+    vec2 coord = gl_FragCoord.xy/canvasSize.xy;
+    gl_FragColor = vec4(coord.x, coord.y, 1.-coord.x, 1);
+}
+"#;
+
+const GRADIENT_VERTEX_SHADER: &'static str = "#version 100
+attribute vec3 position;
+attribute vec2 texcoord;
+attribute vec4 color0;
+uniform mat4 Model;
+uniform mat4 Projection;
+void main() {
+    gl_Position = Projection * Model * vec4(position, 1);
+}
+";
