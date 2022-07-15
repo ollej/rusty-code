@@ -6,7 +6,7 @@ Display source code on screen using Macroquad, built with Rust.
 
 ## Demo
 
-The application also runs in the browser:
+The application can also run in the browser:
 
 [Web demo](https://ollej.github.io/rusty-code/demo/index.html)
 
