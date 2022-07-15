@@ -1,6 +1,6 @@
 # Rusty Code
 
-Display source code on screen using Macroquad.
+Display source code on screen using Macroquad, built with Rust.
 
 ![Screenshot](https://ollej.github.io/rusty-code/assets/rusty-code.png)
 
@@ -56,7 +56,7 @@ Run from command line to display sourcecode syntax highlighted on screen using
 the Macroquad game library.
 
 ```
-rusty-code 0.3.0
+rusty-code 0.5.0
 A small tool to display sourcecode files
 
 USAGE:
