@@ -129,7 +129,7 @@ async fn get_gist_file(gist_id: String) -> Result<Code> {
     parse_gist_response(json)
 }
 
-async fn build_codebox(opt: &CliOptions, theme: &Theme) -> Result<TextBox> {
+async fn build_codebox(opt: &CliOptions, theme: &Theme) -> Result<CodeBox> {
     let font_bold = load_ttf_font(&theme.font_bold)
         .await
         .map_err(|e| CodeError::FontError(theme.font_bold.clone(), e))?;
