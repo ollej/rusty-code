@@ -1243,6 +1243,7 @@ dependencies = [
 [[package]]
 name = "rusty-slider"
 version = "0.18.0"
+source = "git+https://github.com/ollej/rusty-slider#fac021fb88e5aa7bb746776a0a665452b60a7a53"
 dependencies = [
  "colorsys",
  "glob",
