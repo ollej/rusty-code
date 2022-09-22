@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 detect-lang = "0.1.5"
 jsonpath-rust = "0.1.5"
-macroquad = "0.3.20"
+macroquad = "0.3.24"
 quad-net = "0.1.1"
 quad-url = "0.1.1"
 rusty-slider = { version = "0.16.0", git = "https://github.com/ollej/rusty-slider" }
