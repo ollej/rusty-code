@@ -58,7 +58,7 @@ Run from command line to display sourcecode syntax highlighted on screen using
 the Macroquad game library.
 
 ```
-rusty-code 0.5.0
+rusty-code 0.6.0
 A small tool to display sourcecode files
 
 USAGE:
