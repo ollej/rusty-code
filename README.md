@@ -1,5 +1,7 @@
 # Rusty Code
 
+[![Cross-compile](https://github.com/ollej/rusty-code/actions/workflows/crosscompile.yml/badge.svg)](https://github.com/ollej/rusty-code/actions/workflows/crosscompile.yml)
+
 Display source code on screen using Macroquad, built with Rust.
 
 ![Screenshot](https://ollej.github.io/rusty-code/assets/rusty-code.png)
