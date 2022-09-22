@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 detect-lang = "0.1.5"
-jsonpath-rust = "0.1.5"
+jsonpath-rust = "0.1.6"
 macroquad = "0.3.24"
 quad-net = "0.1.1"
 quad-url = "0.1.1"
@@ -13,13 +13,13 @@ rusty-slider = { version = "0.16.0", git = "https://github.com/ollej/rusty-slide
 structopt = "0.3.26"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-openssl = { version = "0.10.38", features = ["vendored"] }
+openssl = { version = "0.10.41", features = ["vendored"] }
 # Support reading OS root certs
-rustls-native-certs = "0.6.1"
+rustls-native-certs = "0.6.2"
 
 # Support reading OS root certs
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.ureq]
-version = "2.4"
+version = "2.5.0"
 features = ["native-certs"]
 
 # Doesn't work with android build
