@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use jsonpath_rust::JsonPathFinder;
 use macroquad::prelude::*;
 use quad_net::http_request::{HttpError, RequestBuilder};
