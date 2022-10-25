@@ -1,14 +1,14 @@
 #![windows_subsystem = "windows"]
 
-use jsonpath_rust::JsonPathFinder;
-use macroquad::prelude::*;
-use quad_net::http_request::{HttpError, RequestBuilder};
-use quad_url::get_program_parameters;
 use rusty_slider::prelude::*;
-use std::error;
-use std::fmt;
-use std::path::PathBuf;
-use structopt::StructOpt;
+use std::{error, fmt, path::PathBuf};
+use {
+    jsonpath_rust::JsonPathFinder,
+    macroquad::prelude::*,
+    quad_net::http_request::{HttpError, RequestBuilder},
+    quad_url::get_program_parameters,
+    structopt::StructOpt,
+};
 
 struct Code {
     filename: String,
@@ -117,12 +117,16 @@ fn parse_gist_response(json: String) -> Result<Code> {
     let gist_filename = gist
         .first()
         .ok_or_else(|| CodeError::GistParse("Filename missing".to_string()))?
+        .clone()
+        .to_data()
         .as_str()
         .ok_or_else(|| CodeError::GistParse("Couldn't parse filename".to_string()))?
         .to_string();
     let gist_content = gist
         .get(1)
         .ok_or_else(|| CodeError::GistParse("Content missing".to_string()))?
+        .clone()
+        .to_data()
         .as_str()
         .ok_or_else(|| CodeError::GistParse("Couldn't parse filename".to_string()))?
         .to_string();
