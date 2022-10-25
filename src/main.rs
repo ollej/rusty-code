@@ -66,7 +66,7 @@ type Result<T> = std::result::Result<T, CodeError>;
 enum CodeError {
     File(String, FileError),
     GistLoad(String, HttpError),
-    Font(String, FontError),
+    Font(FontError),
     GistParse(String),
 }
 
@@ -77,26 +77,23 @@ impl fmt::Display for CodeError {
             CodeError::GistLoad(gist_id, _e) => {
                 write!(f, "Couldn't load Gist with ID: {}", gist_id)
             }
-            CodeError::Font(filename, _e) => write!(f, "Couldn't load font: {}", filename),
+            CodeError::Font(error) => write!(f, "Couldn't load font: {:?}", error),
             CodeError::GistParse(message) => write!(f, "Couldn't parse JSON: {}", message),
         }
     }
 }
 
-impl error::Error for CodeError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        match self {
-            CodeError::File(_, ref e) => Some(e),
-            CodeError::GistLoad(_, _e) => None,
-            CodeError::Font(_, ref e) => Some(e),
-            CodeError::GistParse(_) => None,
-        }
-    }
-}
+impl error::Error for CodeError {}
 
 impl From<FileError> for CodeError {
     fn from(err: FileError) -> CodeError {
         CodeError::File(err.path.clone(), err)
+    }
+}
+
+impl From<FontError> for CodeError {
+    fn from(err: FontError) -> CodeError {
+        CodeError::Font(err)
     }
 }
 
@@ -117,8 +114,18 @@ fn parse_gist_response(json: String) -> Result<Code> {
     let finder = JsonPathFinder::from_str(&json, "$.files.*['filename', 'content']")
         .map_err(CodeError::GistParse)?;
     let gist = finder.find_slice();
-    let gist_filename = gist.first().unwrap().as_str().unwrap().to_string();
-    let gist_content = gist.get(1).unwrap().as_str().unwrap().to_string();
+    let gist_filename = gist
+        .first()
+        .ok_or_else(|| CodeError::GistParse("Filename missing".to_string()))?
+        .as_str()
+        .ok_or_else(|| CodeError::GistParse("Couldn't parse filename".to_string()))?
+        .to_string();
+    let gist_content = gist
+        .get(1)
+        .ok_or_else(|| CodeError::GistParse("Content missing".to_string()))?
+        .as_str()
+        .ok_or_else(|| CodeError::GistParse("Couldn't parse filename".to_string()))?
+        .to_string();
     debug!(
         "gist filename:\n{},\ngist_content:\n{}",
         gist_filename, gist_content
@@ -132,15 +139,9 @@ async fn get_gist_file(gist_id: String) -> Result<Code> {
 }
 
 async fn build_codebox(opt: &CliOptions, theme: &Theme) -> Result<CodeBox> {
-    let font_bold = load_ttf_font(&theme.font_bold)
-        .await
-        .map_err(|e| CodeError::Font(theme.font_bold.clone(), e))?;
-    let font_italic = load_ttf_font(&theme.font_italic)
-        .await
-        .map_err(|e| CodeError::Font(theme.font_italic.clone(), e))?;
-    let font_code = load_ttf_font(&theme.font_code)
-        .await
-        .map_err(|e| CodeError::Font(theme.font_code.clone(), e))?;
+    let font_bold = load_ttf_font(&theme.font_bold).await?;
+    let font_italic = load_ttf_font(&theme.font_italic).await?;
+    let font_code = load_ttf_font(&theme.font_code).await?;
 
     let code = Code::load(opt.gist.clone(), opt.filename.clone(), opt.code.clone()).await?;
     let language = code.language(opt.language.clone());
@@ -221,7 +222,7 @@ async fn main() {
             ..Default::default()
         },
     )
-    .unwrap();
+    .expect("Couldn't load material");
     loop {
         #[cfg(not(target_arch = "wasm32"))]
         if is_key_pressed(KeyCode::Q) | is_key_pressed(KeyCode::Escape) {
@@ -255,7 +256,6 @@ async fn main() {
         );
         gl_use_default_material();
 
-        //clear_background(theme.background_color);
         match &codebox_result {
             Ok(codebox) => {
                 let xpos = screen_width() / 2. - codebox.width_with_padding() as f32 / 2.;
