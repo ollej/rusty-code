@@ -3,11 +3,11 @@
 use rusty_slider::prelude::*;
 use std::{error, fmt, path::PathBuf};
 use {
+    clap::Parser,
     jsonpath_rust::JsonPathFinder,
     macroquad::prelude::*,
     quad_net::http_request::{HttpError, RequestBuilder},
     quad_url::get_program_parameters,
-    structopt::StructOpt,
 };
 
 struct Code {
@@ -169,26 +169,26 @@ fn draw_error_message(message: String, font_size: u16) {
         },
     );
 }
-#[derive(StructOpt, Debug)]
-#[structopt(
+#[derive(Parser, Debug)]
+#[command(
     name = "rusty-code",
     about = "A small tool to display sourcecode files"
 )]
 struct CliOptions {
     /// Code to display, overrides both `filename` and `gist`
-    #[structopt(short, long)]
+    #[arg(short, long)]
     pub code: Option<String>,
     /// Path to sourcecode file to display [default: assets/helloworld.rs]
-    #[structopt(short, long, parse(from_os_str))]
+    #[arg(short, long)]
     pub filename: Option<PathBuf>,
     /// Gist id to display, if set, will override `filename` option
-    #[structopt(short, long)]
+    #[arg(short, long)]
     pub gist: Option<String>,
     /// Language of the code, if empty defaults to file extension.
-    #[structopt(short, long)]
+    #[arg(short, long)]
     pub language: Option<String>,
     /// Path to theme.json file
-    #[structopt(short, long, parse(from_os_str), default_value = "assets/theme.json")]
+    #[arg(short, long, default_value = "assets/theme.json")]
     pub theme: PathBuf,
 }
 
@@ -203,7 +203,7 @@ fn window_conf() -> Conf {
 /// Binary to display source code with Macroquad
 #[macroquad::main(window_conf)]
 async fn main() {
-    let opt = CliOptions::from_iter(get_program_parameters().iter());
+    let opt = CliOptions::parse_from(get_program_parameters().iter());
     let theme = Theme::load(opt.theme.clone()).await;
 
     let codebox_result = build_codebox(&opt, &theme).await;
