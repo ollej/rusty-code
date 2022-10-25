@@ -47,16 +47,16 @@ impl Code {
             return get_gist_file(gist_id).await;
         }
         let file = Self::get_filename(filename);
-        return load_string(&file)
+        load_string(&file)
             .await
             .map(|code| Code::new(file, code))
-            .map_err(|e| e.into());
+            .map_err(|e| e.into())
     }
 
     fn get_filename(filename: Option<PathBuf>) -> String {
         filename
             .map(|file| file.to_string_lossy().into_owned())
-            .unwrap_or("assets/helloworld.rs".to_string())
+            .unwrap_or_else(|| "assets/helloworld.rs".to_string())
     }
 }
 
@@ -64,39 +64,39 @@ type Result<T> = std::result::Result<T, CodeError>;
 
 #[derive(Debug)]
 enum CodeError {
-    FileError(String, FileError),
-    GistLoadError(String, HttpError),
-    FontError(String, FontError),
-    GistParseError(String),
+    File(String, FileError),
+    GistLoad(String, HttpError),
+    Font(String, FontError),
+    GistParse(String),
 }
 
 impl fmt::Display for CodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &*self {
-            CodeError::FileError(filename, _e) => write!(f, "Couldn't load file: {}", filename),
-            CodeError::GistLoadError(gist_id, _e) => {
+        match self {
+            CodeError::File(filename, _e) => write!(f, "Couldn't load file: {}", filename),
+            CodeError::GistLoad(gist_id, _e) => {
                 write!(f, "Couldn't load Gist with ID: {}", gist_id)
             }
-            CodeError::FontError(filename, _e) => write!(f, "Couldn't load font: {}", filename),
-            CodeError::GistParseError(message) => write!(f, "Couldn't parse JSON: {}", message),
+            CodeError::Font(filename, _e) => write!(f, "Couldn't load font: {}", filename),
+            CodeError::GistParse(message) => write!(f, "Couldn't parse JSON: {}", message),
         }
     }
 }
 
 impl error::Error for CodeError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        match &*self {
-            CodeError::FileError(_, ref e) => Some(e),
-            CodeError::GistLoadError(_, _e) => None,
-            CodeError::FontError(_, ref e) => Some(e),
-            CodeError::GistParseError(_) => None,
+        match self {
+            CodeError::File(_, ref e) => Some(e),
+            CodeError::GistLoad(_, _e) => None,
+            CodeError::Font(_, ref e) => Some(e),
+            CodeError::GistParse(_) => None,
         }
     }
 }
 
 impl From<FileError> for CodeError {
     fn from(err: FileError) -> CodeError {
-        CodeError::FileError(err.path.clone(), err)
+        CodeError::File(err.path.clone(), err)
     }
 }
 
@@ -107,7 +107,7 @@ async fn load_gist(gist_id: String) -> Result<String> {
         .send();
     loop {
         if let Some(result) = request.try_recv() {
-            return result.map_err(|e| CodeError::GistLoadError(gist_id, e));
+            return result.map_err(|e| CodeError::GistLoad(gist_id, e));
         };
         next_frame().await;
     }
@@ -115,7 +115,7 @@ async fn load_gist(gist_id: String) -> Result<String> {
 
 fn parse_gist_response(json: String) -> Result<Code> {
     let finder = JsonPathFinder::from_str(&json, "$.files.*['filename', 'content']")
-        .map_err(|e| CodeError::GistParseError(e))?;
+        .map_err(CodeError::GistParse)?;
     let gist = finder.find_slice();
     let gist_filename = gist.first().unwrap().as_str().unwrap().to_string();
     let gist_content = gist.get(1).unwrap().as_str().unwrap().to_string();
@@ -134,13 +134,13 @@ async fn get_gist_file(gist_id: String) -> Result<Code> {
 async fn build_codebox(opt: &CliOptions, theme: &Theme) -> Result<CodeBox> {
     let font_bold = load_ttf_font(&theme.font_bold)
         .await
-        .map_err(|e| CodeError::FontError(theme.font_bold.clone(), e))?;
+        .map_err(|e| CodeError::Font(theme.font_bold.clone(), e))?;
     let font_italic = load_ttf_font(&theme.font_italic)
         .await
-        .map_err(|e| CodeError::FontError(theme.font_italic.clone(), e))?;
+        .map_err(|e| CodeError::Font(theme.font_italic.clone(), e))?;
     let font_code = load_ttf_font(&theme.font_code)
         .await
-        .map_err(|e| CodeError::FontError(theme.font_code.clone(), e))?;
+        .map_err(|e| CodeError::Font(theme.font_code.clone(), e))?;
 
     let code = Code::load(opt.gist.clone(), opt.filename.clone(), opt.code.clone()).await?;
     let language = code.language(opt.language.clone());
@@ -159,7 +159,7 @@ fn draw_error_message(message: String, font_size: u16) {
         xpos,
         ypos,
         TextParams {
-            font_size: font_size,
+            font_size,
             ..TextParams::default()
         },
     );
@@ -271,7 +271,7 @@ async fn main() {
     }
 }
 
-const GRADIENT_FRAGMENT_SHADER: &'static str = r#"#version 100
+const GRADIENT_FRAGMENT_SHADER: &str = r#"#version 100
 precision lowp float;
 uniform vec2 canvasSize;
 uniform sampler2D Texture;
@@ -282,7 +282,7 @@ void main() {
 }
 "#;
 
-const GRADIENT_VERTEX_SHADER: &'static str = "#version 100
+const GRADIENT_VERTEX_SHADER: &str = "#version 100
 attribute vec3 position;
 attribute vec2 texcoord;
 attribute vec4 color0;
