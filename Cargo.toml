@@ -23,8 +23,12 @@ rustls-native-certs = "0.6.2"
 version = "2.5.0"
 features = ["native-certs"]
 
+[profile.dev]
+debug = 1 # less precise locations
+
 # Doesn't work with android build
 [profile.dev.package.'*']
+debug = false # no debug symbols for deps
 opt-level = 3
 
 [profile.release]
