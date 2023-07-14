@@ -1165,7 +1165,7 @@ checksum = "dc31bd9b61a32c31f9650d18add92aa83a49ba979c143eefd27fe7177b05bd5f"
 
 [[package]]
 name = "rusty-code"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "clap",
  "detect-lang",
