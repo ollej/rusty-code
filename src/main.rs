@@ -64,10 +64,11 @@ type Result<T> = std::result::Result<T, CodeError>;
 
 #[derive(Debug)]
 enum CodeError {
-    File(String, FileError),
+    File(String, macroquad::miniquad::fs::Error),
     GistLoad(String, HttpError),
-    Font(FontError),
+    Font(String),
     GistParse(String),
+    Macroquad(macroquad::Error),
 }
 
 impl fmt::Display for CodeError {
@@ -79,21 +80,22 @@ impl fmt::Display for CodeError {
             }
             CodeError::Font(error) => write!(f, "Couldn't load font: {:?}", error),
             CodeError::GistParse(message) => write!(f, "Couldn't parse JSON: {}", message),
+            CodeError::Macroquad(err) => write!(f, "Macroquad error: {:?}", err),
         }
     }
 }
 
 impl error::Error for CodeError {}
 
-impl From<FileError> for CodeError {
-    fn from(err: FileError) -> CodeError {
-        CodeError::File(err.path.clone(), err)
-    }
-}
-
-impl From<FontError> for CodeError {
-    fn from(err: FontError) -> CodeError {
-        CodeError::Font(err)
+impl From<macroquad::Error> for CodeError {
+    fn from(err: macroquad::Error) -> CodeError {
+        match err {
+            macroquad::Error::FontError(msg) => CodeError::Font(msg.to_string()),
+            macroquad::Error::FileError { kind, path } => CodeError::File(path.clone(), kind),
+            macroquad::Error::ShaderError(_) => CodeError::Macroquad(err),
+            macroquad::Error::ImageError(_) => CodeError::Macroquad(err),
+            macroquad::Error::UnknownError(_) => CodeError::Macroquad(err),
+        }
     }
 }
 
@@ -219,8 +221,11 @@ async fn main() {
     render_target.texture.set_filter(FilterMode::Nearest);
 
     let material = load_material(
-        GRADIENT_VERTEX_SHADER,
-        GRADIENT_FRAGMENT_SHADER,
+        ShaderSource {
+            glsl_vertex: Some(GRADIENT_VERTEX_SHADER),
+            glsl_fragment: Some(GRADIENT_FRAGMENT_SHADER),
+            metal_shader: None,
+        },
         MaterialParams {
             uniforms: vec![("canvasSize".to_owned(), UniformType::Float2)],
             ..Default::default()
@@ -237,7 +242,7 @@ async fn main() {
         set_camera(&Camera2D {
             zoom: vec2(0.01, 0.01),
             target: vec2(0.0, 0.0),
-            render_target: Some(render_target),
+            render_target: Some(render_target.clone()),
             ..Default::default()
         });
 
@@ -246,10 +251,10 @@ async fn main() {
         set_default_camera();
 
         clear_background(WHITE);
-        gl_use_material(material);
+        gl_use_material(&material);
         material.set_uniform("canvasSize", (screen_width(), screen_height()));
         draw_texture_ex(
-            render_target.texture,
+            &render_target.texture,
             0.,
             0.,
             WHITE,

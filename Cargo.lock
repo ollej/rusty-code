@@ -40,24 +40,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "audir-sles"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea47348666a8edb7ad80cbee3940eb2bccf70df0e6ce09009abe1a836cb779f5"
-
-[[package]]
-name = "audrey"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58b92a84e89497e3cd25d3672cd5d1c288abaac02c18ff21283f17d118b889b8"
-dependencies = [
- "dasp_frame",
- "dasp_sample",
- "hound",
- "lewton",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -263,21 +245,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dasp_frame"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2a3937f5fe2135702897535c8d4a5553f8b116f76c1529088797f2eee7c5cd6"
-dependencies = [
- "dasp_sample",
-]
-
-[[package]]
-name = "dasp_sample"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f"
-
-[[package]]
 name = "detect-lang"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -448,12 +415,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hound"
-version = "3.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d13cdbd5dbb29f9c88095bbdc2590c9cba0d0a1269b983fef6b2cdd7e9f4db1"
-
-[[package]]
 name = "httparse"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -578,17 +539,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
-name = "lewton"
-version = "0.9.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d542c1a317036c45c2aa1cf10cc9d403ca91eb2d333ef1a4917e5cb10628bd0"
-dependencies = [
- "byteorder",
- "ogg",
- "smallvec",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.136"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -620,9 +570,9 @@ dependencies = [
 
 [[package]]
 name = "macroquad"
-version = "0.3.24"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19c4f0576d6468cb31de5ba0b3c8eb56cfd95ed3edfee380ac339309b4830074"
+checksum = "17e29d28c6e08e098455c03a94afda970c9d009a0ccca95904a26e73b4cace7b"
 dependencies = [
  "bumpalo",
  "fontdue",
@@ -631,7 +581,7 @@ dependencies = [
  "macroquad_macro",
  "miniquad",
  "quad-rand",
- "quad-snd",
+ "slotmap",
 ]
 
 [[package]]
@@ -688,12 +638,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "maybe-uninit"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
-
-[[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -701,9 +645,9 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "miniquad"
-version = "0.3.13"
+version = "0.4.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a07975b18f290b99365f042dd80db3e03908539ca6bc47e749c5eef4ee262fd4"
+checksum = "f9a0c72bbe6fe751b03e87054c06822bab8e4494bbec4eb63a670cbe5980f538"
 dependencies = [
  "libc",
  "ndk-sys",
@@ -841,15 +785,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "915b1b472bc21c53464d6c8461c9d3af805ba1ef837e1cac254428f4a77177b1"
 dependencies = [
  "malloc_buf",
-]
-
-[[package]]
-name = "ogg"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13e571c3517af9e1729d4c63571a27edd660ade0667973bfc74a67c660c2b651"
-dependencies = [
- "byteorder",
 ]
 
 [[package]]
@@ -1047,15 +982,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quad-alsa-sys"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c66c2f04a6946293477973d85adc251d502da51c57b08cd9c997f0cfd8dcd4b5"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "quad-net"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1072,19 +998,6 @@ name = "quad-rand"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "658fa1faf7a4cc5f057c9ee5ef560f717ad9d8dc66d975267f709624d6e1ab88"
-
-[[package]]
-name = "quad-snd"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e82e2e4a55292a75d8569ef0b3f7c24964074efe5767b359dbf028a0b3c53464"
-dependencies = [
- "audir-sles",
- "audrey",
- "libc",
- "quad-alsa-sys",
- "winapi 0.3.9",
-]
 
 [[package]]
 name = "quad-url"
@@ -1245,6 +1158,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustversion"
+version = "1.0.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc31bd9b61a32c31f9650d18add92aa83a49ba979c143eefd27fe7177b05bd5f"
+
+[[package]]
 name = "rusty-code"
 version = "0.6.0"
 dependencies = [
@@ -1263,8 +1182,8 @@ dependencies = [
 
 [[package]]
 name = "rusty-slider"
-version = "0.19.0"
-source = "git+https://github.com/ollej/rusty-slider#549afd147294576d04fbf83efeb4021f0948b87e"
+version = "0.24.0"
+source = "git+https://github.com/ollej/rusty-slider#dea0468576b618b095cea0fb3b06940769729930"
 dependencies = [
  "clap",
  "colorsys",
@@ -1278,6 +1197,8 @@ dependencies = [
  "quad-url",
  "regex",
  "simple-easing",
+ "strum",
+ "strum_macros",
  "syntect",
  "tempfile",
 ]
@@ -1422,12 +1343,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "smallvec"
-version = "0.6.14"
+name = "slotmap"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b97fcaeba89edba30f044a10c6a3cc39df9c3f17d7cd829dd1446cab35f890e0"
+checksum = "e1e08e261d0e8f5c43123b7adf3e4ca1690d655377ac93a03b2c9d3e98de1342"
 dependencies = [
- "maybe-uninit",
+ "version_check",
 ]
 
 [[package]]
@@ -1441,6 +1362,28 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
+name = "strum"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+dependencies = [
+ "strum_macros",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.24.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn",
+]
 
 [[package]]
 name = "syn"
