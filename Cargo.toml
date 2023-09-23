@@ -11,7 +11,6 @@ macroquad = "0.4"
 quad-net = "0.1.1"
 quad-url = "0.1.1"
 rusty-slider = { version = "0.24", git = "https://github.com/ollej/rusty-slider" }
-serde_json = "1.0.87"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 openssl = { version = "0.10.42", features = ["vendored"] }

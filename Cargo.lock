@@ -1322,7 +1322,6 @@ dependencies = [
  "quad-url",
  "rustls-native-certs",
  "rusty-slider",
- "serde_json",
  "ureq",
 ]
 
