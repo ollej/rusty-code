@@ -221,13 +221,12 @@ async fn main() {
     render_target.texture.set_filter(FilterMode::Nearest);
 
     let material = load_material(
-        ShaderSource {
-            glsl_vertex: Some(GRADIENT_VERTEX_SHADER),
-            glsl_fragment: Some(GRADIENT_FRAGMENT_SHADER),
-            metal_shader: None,
+        ShaderSource::Glsl {
+            vertex: GRADIENT_VERTEX_SHADER,
+            fragment: GRADIENT_FRAGMENT_SHADER,
         },
         MaterialParams {
-            uniforms: vec![("canvasSize".to_owned(), UniformType::Float2)],
+            uniforms: vec![UniformDesc::new("canvasSize", UniformType::Float2)],
             ..Default::default()
         },
     )
